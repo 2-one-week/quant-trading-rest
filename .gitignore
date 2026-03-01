@@ -18,3 +18,5 @@ nohup.out
 *.mst
 
 /investment_key/*.key
+
+/apps/trading/tests/fixtures/*.jsonl
