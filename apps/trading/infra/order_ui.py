@@ -103,32 +103,6 @@ class OrderIOManager:
         )
         exit(0)
 
-    def update_stage(self, symbol, dayStage, weekStage):
-        try:
-            df = pd.read_excel(self.file_name, dtype={"symbol": str})
-
-            mapper = {
-                StageType.BUY_1: "buy_1",
-                StageType.BUY_2: "buy_2",
-                StageType.BUY_3: "buy_3",
-                StageType.SELL_1: "sell_1",
-                StageType.SELL_2: "sell_2",
-                StageType.SELL_3: "sell_3",
-            }
-
-            for index, row in df.iterrows():
-                if row["symbol"] == symbol:
-                    if weekStage != StageType.NONE:
-                        df.loc[index, "week"] = mapper[weekStage]
-                    if dayStage != StageType.NONE:
-                        df.loc[index, "day"] = mapper[dayStage]
-                    df.to_excel(self.file_name, index=False)
-                    return
-
-        except Exception as e:
-            LogWriter().write_log("symbol: {} not found".format(symbol), LogLevel.ERROR)
-
-
 # if __name__ == "__main__":
 #     start_time = time.time()
 #     testIO = OrderIOManager("test")

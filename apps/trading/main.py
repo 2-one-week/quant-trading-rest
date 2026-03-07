@@ -2,7 +2,6 @@ from core.infra import LogWriter
 from apps.trading.domain.stock import Stock
 from core.domain import StockTick
 from apps.trading.infra.order_ui import OrderIOManager
-from core.domain.stage_calc import StageCalculator
 from core.infra.kiwoom_wrapper import KiwoomWrapper
 from core.infra.hantoo_wrapper import HantooWrapper
 from apps.trading.application.trader import KiwoomTrader, HantooTrader
@@ -25,7 +24,6 @@ def run_trading(
     max_loops=None,
 ):
     runtime_stock_database = StockDataBase()
-    stage_calculator = StageCalculator(runtime_stock_database)
 
     if invest_company == "kiwoom":
         if investCommunicator is None:
@@ -113,13 +111,6 @@ def run_trading(
 
             account_balance = investCommunicator.get_stock_balance()
             orderIO.update_account_balance(account_balance)
-
-            for stock in stocks:
-                    orderIO.update_stage(
-                    stock.symbol,
-                    stage_calculator.calc_ma_stage(stock.symbol, StockTick.DAY),
-                    stage_calculator.calc_ma_stage(stock.symbol, StockTick.WEEK),
-                )
             LogWriter().write_log("Market close")
             break
 
