@@ -42,12 +42,17 @@ QUANT_PROFILE=public_example python -m apps.trading.main kiwoom quant
 scripts/run_quant.sh kiwoom quant public_example
 ```
 
+- `public_example`: 공개 저장소에 포함된 예시 전략 profile 이름입니다.
+- `quant`: 현재 구현 기준 `.xlsx` 주문 시트와 `.key` 인증 파일을 연결해 선택하는 실행 모드 이름입니다. (`test`는 모의운용)
+
 ## 운영 모델
 
 - 낮(국장) 세션: 키움증권 중심 운용
    - 국장 기준 `08:00~09:00`: 거래 주문 없이 가격 정보 업데이트만 수행
 - 밤(미국장) 세션: 한국투자증권 중심 운용
 - `crontab` 등 스케줄러 기반 일일 운용
+- 이 프로젝트는 세션별로 프로세스를 새로 실행하는 운영 방식을 권장한다.
+- 별도 장치가 없으면 트레이딩 런타임의 내부 상태는 실행 단위 기준으로 초기화되며, 일반적인 일일 운용에서는 매일 새로 시작하는 것을 전제로 한다.
 
 ## 주요 제약사항
 
@@ -65,6 +70,7 @@ scripts/run_quant.sh kiwoom quant public_example
 
 ## 문서
 
+- 트레이딩 아키텍처: `docs/architecture/trading-architecture.md`
 - 조건 체인/프로필: `signals/conditions/README.md`
 - 키 파일 포맷: `investment_key/README.md`
 - 주문 파일 규칙: `order/README.md`

@@ -12,6 +12,9 @@ nohup.out
 *.log
 *.txt
 *.xlsx
+!order/kiwoom/example_order.xlsx
+!order/hantoo/example_order.xlsx
+!order/README.md
 *.png
 *.pyc
 *.tar.gz
