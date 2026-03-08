@@ -44,9 +44,6 @@ def run_trading(
     else:
         exit("Please select the investment company. kiwoom, hantoo available.")
 
-    if quant_mode != "test" and quant_mode != "quant" and quant_mode != "isa":
-        exit("Please select the mode. test, quant, isa avilable.")
-
     LogWriter(mode=quant_mode, company=invest_company, category=log_category)
     orderIO = OrderIOManager(invest_company, quant_mode)
 

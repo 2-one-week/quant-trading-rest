@@ -9,6 +9,7 @@ from pathlib import Path
 from core.domain import StockTick, TickToMap
 from core.infra.util import find_project_root
 from core.infra.market_time import KRXMarketTime
+from core.infra.trading_profile import load_trading_profile
 
 
 class KiwoomWrapper(InvestmentWrapper):
@@ -18,15 +19,8 @@ class KiwoomWrapper(InvestmentWrapper):
 
     def connect(self, mode):
         project_root = find_project_root(Path(__file__).resolve())
-        key_file = project_root / "investment_key"
-        if mode == "quant":
-            key_file = key_file / "kiwoominvestment.key"
-        elif mode == "isa":
-            key_file = key_file / "kiwoomisainvestment.key"
-        elif mode == "test":
-            key_file = key_file / "kiwoomtestinvestment.key"
-        else:
-            exit("Please select the mode. test, quant, isa available.")
+        profile = load_trading_profile("kiwoom", mode, start=Path(__file__).resolve())
+        key_file = profile.key_file
 
         with open(key_file, encoding="utf-8") as f:
             lines = f.readlines()
@@ -35,8 +29,8 @@ class KiwoomWrapper(InvestmentWrapper):
         secret = lines[1].strip()
         self.stock_account = lines[2].strip()
         self.rp_etf_symbol = lines[3].strip()
-        self.al_symbol = "_AL" if mode != "test" else ""
-        self.mock = mode == "test"
+        self.al_symbol = "" if profile.mock else "_AL"
+        self.mock = profile.mock
 
         if RECORDING_ENABLED:
             record_path = str(

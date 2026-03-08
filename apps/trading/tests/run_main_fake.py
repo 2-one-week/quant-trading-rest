@@ -30,7 +30,7 @@ def _parse_args():
         description="Run apps.trading.main logic with fake wrappers and recorded data."
     )
     parser.add_argument("invest_company", choices=["kiwoom", "hantoo"])
-    parser.add_argument("quant_mode", choices=["test", "quant", "isa"])
+    parser.add_argument("quant_mode")
     parser.add_argument("--max-loops", type=int, default=3)
     parser.add_argument("--kiwoom-data", default=None)
     parser.add_argument("--hantoo-data", default=None)

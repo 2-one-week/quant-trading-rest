@@ -1,5 +1,6 @@
 import os
 from core.infra import LogWriter, LogLevel
+from core.infra.trading_profile import load_trading_profile
 from core.domain import StockTick, StageType
 
 import pandas as pd
@@ -9,19 +10,16 @@ class OrderIOManager:
     def __init__(self, invest_company, account_type):
         self.invest_company = invest_company
         self.account_type = account_type
-        self.file_name = ""
-        base_dir = os.path.join("order", invest_company)
-        if not os.path.exists(base_dir):
-            os.makedirs(base_dir)
-
-        if account_type == "test":
-            self.file_name = os.path.join(base_dir, "test_order.xlsx")
-        elif account_type == "quant":
-            self.file_name = os.path.join(base_dir, "quant_order.xlsx")
-        elif account_type == "isa":
-            self.file_name = os.path.join(base_dir, "isa_order.xlsx")
-        else:
-            LogWriter().write_log("account_type error", LogLevel.ERROR)
+        try:
+            profile = load_trading_profile(invest_company, account_type)
+            if profile.order_file is None:
+                raise RuntimeError(
+                    "order_file is required for trading runtime profiles"
+                )
+            self.file_name = str(profile.order_file)
+            os.makedirs(os.path.dirname(self.file_name), exist_ok=True)
+        except Exception as e:
+            LogWriter().write_log(str(e), LogLevel.ERROR)
             exit(0)
 
     def update_account_balance(self, balances):

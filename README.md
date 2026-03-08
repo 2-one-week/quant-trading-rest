@@ -16,8 +16,9 @@ REST API 기반 자동매매 프로젝트입니다.
 - 브로커: 키움(국장), 한국투자증권(미국장)
 - 실행 진입점: `apps/trading/main.py`
 - 전략 전환: `QUANT_PROFILE` 환경변수
-- 주문 입력: `order/<broker>/*.xlsx`
-- 인증키: `investment_key/*.key`
+- 트레이딩 프로필 설정: `trading_profiles.toml`
+- 주문 입력: `trading_profiles.toml`에 매핑된 `order/<broker>/*.xlsx`
+- 인증키: `trading_profiles.toml`에 매핑된 `investment_key/*.key`
 
 ## 빠른 시작
 
@@ -34,6 +35,8 @@ python3 -m pip install requests pytz pandas exchange_calendars matplotlib openpy
   - 준비 방법/포맷: `investment_key/README.md` 를 참고하세요.
 - 주문 시트(`order/<broker>/*.xlsx`)
   - 컬럼/틱/제약사항: `order/README.md` 를 참고하세요.
+- 프로필 매핑(`trading_profiles.toml`)
+  - 어떤 실행 profile이 어떤 key/order 파일을 읽는지 여기서 결정합니다.
 
 실행 예시:
 
@@ -43,7 +46,7 @@ scripts/run_quant.sh kiwoom quant public_example
 ```
 
 - `public_example`: 공개 저장소에 포함된 예시 전략 profile 이름입니다.
-- `quant`: 현재 구현 기준 `.xlsx` 주문 시트와 `.key` 인증 파일을 연결해 선택하는 실행 모드 이름입니다. (`test`는 모의운용)
+- `quant`: 현재 구현 기준 `trading_profiles.toml`에서 key/order 파일을 가리키는 실행 profile 이름입니다. (`test`는 보통 모의운용 profile로 사용)
 
 ## 운영 모델
 
@@ -72,6 +75,7 @@ scripts/run_quant.sh kiwoom quant public_example
 
 - 트레이딩 아키텍처: `docs/architecture/trading-architecture.md`
 - 조건 체인/프로필: `signals/conditions/README.md`
+- 트레이딩 profile 설정: `trading_profiles.toml`
 - 키 파일 포맷: `investment_key/README.md`
 - 주문 파일 규칙: `order/README.md`
 - 로그 경로: `output/log/README.md`

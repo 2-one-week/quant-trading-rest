@@ -5,6 +5,7 @@ from core.infra.market_time import NasdaqMarketTime
 from core.infra.hantoo_rest import KoreaInvestment
 from core.infra.hantoo_record_rest import HantooRecordRestAPI, RECORDING_ENABLED
 from core.infra.util import find_project_root
+from core.infra.trading_profile import load_trading_profile
 import time
 import datetime
 import pytz
@@ -20,13 +21,8 @@ class HantooWrapper(InvestmentWrapper):
 
     def connect(self, mode):
         project_root = find_project_root(Path(__file__).resolve())
-        key_file = project_root / "investment_key"
-        if mode == "quant":
-            key_file = key_file / "koreainvestment.key"
-        elif mode == "test":
-            key_file = key_file / "koreatestinvestment.key"
-        else:
-            exit("Please select the mode. quant, test available.")
+        profile = load_trading_profile("hantoo", mode, start=Path(__file__).resolve())
+        key_file = profile.key_file
 
         with open(key_file, encoding="utf-8") as f:
             lines = f.readlines()
@@ -35,7 +31,7 @@ class HantooWrapper(InvestmentWrapper):
         secret = lines[1].strip()
         acc_no = lines[2].strip()
         self.rp_etf_symbol = lines[3].strip()
-        self.mock = mode == "test"
+        self.mock = profile.mock
         self.order = []
         if RECORDING_ENABLED:
             record_path = str(

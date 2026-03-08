@@ -74,4 +74,4 @@ You can set initial fake cash/holdings with `KIWOOM_FAKE_CASH` and `KIWOOM_FAKE_
 - Date-dependent params are normalized so replays are stable across days.
 - `get_last_prices` in `apps/trading/tests/fake_kiwoom_rest.py` always appends `_AL` to the symbol to match Kiwoom price recordings.
 - Hantoo account balance and available cash are seeded from constants in `apps/trading/tests/fake_hantoo_rest.py` and updated by fake orders.
-- The replay runner updates `order/<invest_company>/test_order.xlsx` during the run.
+- The replay runner updates the order sheet mapped by `trading_profiles.toml` for the selected broker/profile.
