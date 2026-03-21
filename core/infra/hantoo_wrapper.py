@@ -15,6 +15,9 @@ from pathlib import Path
 class HantooWrapper(InvestmentWrapper):
     def __init__(self, stock_db):
         self.stock_db = stock_db
+        self.rp_etf_symbol = None
+        self.rp_etf_name = None
+        self.rp_etf_enabled = False
 
     def connect(self, mode):
         project_root = find_project_root(Path(__file__).resolve())
@@ -27,7 +30,9 @@ class HantooWrapper(InvestmentWrapper):
         key = lines[0].strip()
         secret = lines[1].strip()
         acc_no = lines[2].strip()
-        self.rp_etf_symbol = lines[3].strip()
+        self.rp_etf_symbol = profile.rp_symbol
+        self.rp_etf_name = profile.rp_name
+        self.rp_etf_enabled = False
         self.mock = profile.mock
         self.order = []
         if RECORDING_ENABLED:
@@ -45,6 +50,17 @@ class HantooWrapper(InvestmentWrapper):
             self.broker = KoreaInvestment(
                 api_key=key, api_secret=secret, acc_no=acc_no, mock=self.mock
             )
+
+    def has_rp_etf_config(self):
+        return bool(self.rp_etf_symbol and self.rp_etf_name)
+
+    def is_rp_etf_enabled(self):
+        return bool(self.rp_etf_enabled)
+
+    def set_rp_etf_state(self, enabled, name=None):
+        if name is not None:
+            self.rp_etf_name = name
+        self.rp_etf_enabled = bool(enabled and self.has_rp_etf_config())
 
     def get_last_prices(self, symbol, tick, input_desc):
         if tick <= StockTick.HOUR:
@@ -116,6 +132,29 @@ class HantooWrapper(InvestmentWrapper):
         return datetime.datetime.now(nyt).strftime("%Y%m%d")
 
     def update_by_minute(self, symbol):
+        currentPrice, date_str, time_str, volume = self._fetch_current_price(symbol)
+        min_prices = self.stock_db.price_db.setdefault(symbol, {}).setdefault(
+            StockTick.MIN1, []
+        )
+        if currentPrice is None:
+            return min_prices[-1] if min_prices else None
+        if not min_prices:
+            min_prices.append(currentPrice)
+
+        self.stock_db.record_minute_price(
+            "hantoo", symbol, date_str, time_str, currentPrice, volume
+        )
+        return currentPrice
+
+    def get_current_price(self, symbol):
+        currentPrice, _, _, _ = self._fetch_current_price(symbol)
+        return currentPrice
+
+    def _fetch_current_price(self, symbol):
+        min_prices = self.stock_db.price_db.setdefault(symbol, {}).setdefault(
+            StockTick.MIN1, []
+        )
+        previousPrice = min_prices[-1] if min_prices else None
         sleepCount = 0
         while True:
             ohlcv = self.broker.fetch_domestic_usa_price(
@@ -140,13 +179,17 @@ class HantooWrapper(InvestmentWrapper):
                 tryApiReadable = False
 
             # defense code for weird price
-            previousPrice = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
             if (
                 tryApiReadable == False
                 or recvdCode != "0"
                 or recvdSym != "D" + self.stock_db.name_table[symbol] + symbol
-                or currentPrice > previousPrice * 1.15
-                or currentPrice < previousPrice * 0.85
+                or (
+                    previousPrice is not None
+                    and (
+                        currentPrice > previousPrice * 1.15
+                        or currentPrice < previousPrice * 0.85
+                    )
+                )
             ):
                 LogWriter().write_log(
                     "Hantoo API ERROR OCCURS! RETRY update price.. {} {}".format(
@@ -163,17 +206,14 @@ class HantooWrapper(InvestmentWrapper):
                     volume = abs(float(ohlcv["output"]["tvol"]))
                 except Exception:
                     volume = None
-                self.stock_db.record_minute_price(
-                    "hantoo", symbol, date_str, time_str, currentPrice, volume
-                )
-                return currentPrice
+                return currentPrice, date_str, time_str, volume
 
             sleepCount += 1
             if sleepCount > 5:
                 LogWriter().write_log(
                     "Error exceeds 5 times. Use previous MIN price", LogLevel.ERROR
                 )
-                return self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+                return previousPrice, None, None, None
 
     def check_and_update_stock_info(self, symbol, info):
         self.stock_db.name_table[symbol] = info

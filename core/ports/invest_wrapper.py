@@ -14,6 +14,10 @@ class InvestmentWrapper(ABC):
         pass
 
     @abstractmethod
+    def get_current_price(self, symbol):
+        pass
+
+    @abstractmethod
     def check_and_update_stock_info(self, symbol, info):
         pass
     

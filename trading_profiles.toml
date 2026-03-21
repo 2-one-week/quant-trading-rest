@@ -1,12 +1,19 @@
 [kiwoom.quant]
-key_file = "investment_key/kiwoom.key"
+key_file = "investment_key/kiwoominvestment.key"
 order_file = "order/kiwoom/quant_order.xlsx"
 mock = false
 
+[kiwoom.isa]
+key_file = "investment_key/kiwoomisainvestment.key"
+order_file = "order/kiwoom/isa_order.xlsx"
+mock = false
+
 [kiwoom.test]
-key_file = "investment_key/kiwoomtest.key"
+key_file = "investment_key/kiwoomtestinvestment.key"
 order_file = "order/kiwoom/test_order.xlsx"
 mock = true
+rp_symbol = "None"
+rp_name = "None"
 
 [hantoo.quant]
 key_file = "investment_key/koreainvestment.key"
@@ -14,6 +21,6 @@ order_file = "order/hantoo/quant_order.xlsx"
 mock = false
 
 [hantoo.test]
-key_file = "investment_key/koreainvestmenttest.key"
+key_file = "investment_key/koreatestinvestment.key"
 order_file = "order/hantoo/test_order.xlsx"
 mock = true

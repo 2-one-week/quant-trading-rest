@@ -16,6 +16,9 @@ class KiwoomWrapper(InvestmentWrapper):
     def __init__(self, stock_db):
         self.stock_db = stock_db
         self.today = datetime.now().strftime("%Y%m%d")
+        self.rp_etf_symbol = None
+        self.rp_etf_name = None
+        self.rp_etf_enabled = False
 
     def connect(self, mode):
         project_root = find_project_root(Path(__file__).resolve())
@@ -28,7 +31,9 @@ class KiwoomWrapper(InvestmentWrapper):
         key = lines[0].strip()
         secret = lines[1].strip()
         self.stock_account = lines[2].strip()
-        self.rp_etf_symbol = lines[3].strip()
+        self.rp_etf_symbol = profile.rp_symbol
+        self.rp_etf_name = profile.rp_name
+        self.rp_etf_enabled = False
         self.al_symbol = "" if profile.mock else "_AL"
         self.mock = profile.mock
 
@@ -41,6 +46,17 @@ class KiwoomWrapper(InvestmentWrapper):
             )
         else:
             self.kiwoom = KiwoomRestAPI(key, secret, mock=self.mock)
+
+    def has_rp_etf_config(self):
+        return bool(self.rp_etf_symbol and self.rp_etf_name)
+
+    def is_rp_etf_enabled(self):
+        return bool(self.rp_etf_enabled)
+
+    def set_rp_etf_state(self, enabled, name=None):
+        if name is not None:
+            self.rp_etf_name = name
+        self.rp_etf_enabled = bool(enabled and self.has_rp_etf_config())
 
     def _parse_hoga_price(self, value):
         if value is None:
@@ -143,7 +159,32 @@ class KiwoomWrapper(InvestmentWrapper):
                 return
 
     def update_by_minute(self, symbol):
-        currentPrice = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+        currentPrice, record_date, record_time, record_volume = self._fetch_current_price(
+            symbol
+        )
+        min_prices = self.stock_db.price_db.setdefault(symbol, {}).setdefault(
+            StockTick.MIN1, []
+        )
+        if currentPrice is None:
+            return min_prices[-1] if min_prices else None
+        if not min_prices:
+            min_prices.append(currentPrice)
+
+        if record_date and record_time:
+            self.stock_db.record_minute_price(
+                "kiwoom", symbol, record_date, record_time, currentPrice, record_volume
+            )
+        return currentPrice
+
+    def get_current_price(self, symbol):
+        currentPrice, _, _, _ = self._fetch_current_price(symbol)
+        return currentPrice
+
+    def _fetch_current_price(self, symbol):
+        min_prices = self.stock_db.price_db.setdefault(symbol, {}).setdefault(
+            StockTick.MIN1, []
+        )
+        currentPrice = min_prices[-1] if min_prices else None
         requestSymbol = ""
         sleepCount = 0
         record_date = None
@@ -167,7 +208,7 @@ class KiwoomWrapper(InvestmentWrapper):
                 tryAPIReadable = False
 
             # Defense code for weird price
-            previousPrice = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+            previousPrice = min_prices[-1] if min_prices else None
 
             if tryAPIReadable == False or returnCode != 0 or requestSymbol != symbol:
                 LogWriter().write_log(
@@ -177,8 +218,11 @@ class KiwoomWrapper(InvestmentWrapper):
                     LogLevel.ERROR,
                 )
             elif (
-                previousPrice * 1.15 < currentPrice
-                or previousPrice * 0.85 > currentPrice
+                previousPrice is not None
+                and (
+                    previousPrice * 1.15 < currentPrice
+                    or previousPrice * 0.85 > currentPrice
+                )
             ):
                 tryAPIReadable = False
                 LogWriter().write_log(
@@ -210,14 +254,10 @@ class KiwoomWrapper(InvestmentWrapper):
                 LogWriter().write_log(
                     "Error exceeds 5 times. Use previous MIN price", LogLevel.ERROR
                 )
-                currentPrice = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+                if previousPrice is not None:
+                    currentPrice = previousPrice
                 break
-
-        if record_date and record_time:
-            self.stock_db.record_minute_price(
-                "kiwoom", symbol, record_date, record_time, currentPrice, record_volume
-            )
-        return currentPrice
+        return currentPrice, record_date, record_time, record_volume
 
     def check_and_update_stock_info(self, symbol, info):
         response = self.kiwoom.get_stock_basic_info(symbol)

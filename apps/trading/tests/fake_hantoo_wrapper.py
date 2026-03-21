@@ -16,7 +16,9 @@ class FakeHantooWrapper(HantooWrapper):
             self.record_path = os.path.join(current_dir, "fixtures", "hantoo_prices.jsonl")
 
         acc_no = "12345678-01"
-        self.rp_etf_symbol = "423160"
+        self.rp_etf_symbol = "SGOV"
+        self.rp_etf_name = "AMS" if mode == "test" else "NYS"
+        self.rp_etf_enabled = False
         self.mock = mode == "test"
         self.order = []
         self.broker = FakeKoreaInvestment(acc_no=acc_no, record_path=self.record_path)

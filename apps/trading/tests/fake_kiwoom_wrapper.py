@@ -32,6 +32,8 @@ class FakeKiwoomWrapper(KiwoomWrapper):
 
         self.stock_account = "12345678"
         self.rp_etf_symbol = "423160"
+        self.rp_etf_name = "KODEX KOFR금리액티브(합성)"
+        self.rp_etf_enabled = False
         self.al_symbol = "_AL" if mode != "test" else ""
 
         self.kiwoom = FakeKiwoomRestAPI(

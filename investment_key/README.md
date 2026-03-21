@@ -9,19 +9,20 @@
 
 ## 파일 포맷
 
-`.key` 파일은 4줄 고정 포맷을 사용합니다.
+`.key` 파일은 3줄 고정 포맷을 사용합니다.
 
 ```text
 <APP_KEY>
 <APP_SECRET>
 <ACCOUNT_NO>
-<CASH_SUBSTITUTE_RP_SYMBOL>
 ```
 
 - 1번째 줄: 앱키
 - 2번째 줄: 시크릿키
 - 3번째 줄: 계좌번호
-- 4번째 줄: 현금 대체 매도 대상으로 사용할 RP(또는 단기자금 ETF) 심볼
+
+RP(현금 대체 매도 대상) 설정은 `trading_profiles.toml`에서 관리합니다.
+RP를 사용하지 않을 경우 `trading_profiles.toml`의 `rp_symbol`, `rp_name`을 비우거나 `None`/`null` 문자열로 설정하면 됩니다.
 
 ## 파일명 예시
 

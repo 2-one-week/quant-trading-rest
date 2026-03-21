@@ -12,6 +12,22 @@ class TradingProfile:
     key_file: Path
     order_file: Path | None
     mock: bool
+    rp_symbol: str | None
+    rp_name: str | None
+
+
+def _normalize_optional_str(value) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        value = str(value)
+
+    value = value.strip()
+    if not value:
+        return None
+    if value.lower() in {"none", "null"}:
+        return None
+    return value
 
 
 def load_trading_profile(
@@ -53,4 +69,6 @@ def load_trading_profile(
         key_file=project_root / key_value,
         order_file=(project_root / order_value) if order_value else None,
         mock=bool(profile.get("mock", False)),
+        rp_symbol=_normalize_optional_str(profile.get("rp_symbol")),
+        rp_name=_normalize_optional_str(profile.get("rp_name")),
     )

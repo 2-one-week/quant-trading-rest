@@ -1,6 +1,6 @@
-from core.infra import LogWriter
+from core.infra import LogWriter, LogLevel
 from apps.trading.domain.stock import Stock
-from core.domain import StockTick
+from core.domain import StageType
 from apps.trading.infra.order_ui import OrderIOManager
 from core.infra.kiwoom_wrapper import KiwoomWrapper
 from core.infra.hantoo_wrapper import HantooWrapper
@@ -11,6 +11,44 @@ from signals.conditions.factory import get_condition_factory
 import time
 import sys
 import os
+
+
+def _initialize_rp_etf(invest_communicator, runtime_stock_database):
+    if not hasattr(invest_communicator, "set_rp_etf_state"):
+        return
+
+    invest_communicator.set_rp_etf_state(False)
+    rp_symbol = getattr(invest_communicator, "rp_etf_symbol", None)
+    if not rp_symbol:
+        LogWriter().write_log("RP ETF disabled by profile", LogLevel.INFO)
+        return
+
+    rp_name = getattr(invest_communicator, "rp_etf_name", None)
+    if not rp_name:
+        LogWriter().write_log(
+            "RP ETF metadata missing. symbol={}".format(rp_symbol),
+            LogLevel.ERROR,
+        )
+        return
+
+    runtime_stock_database.price_db.setdefault(rp_symbol, {})
+    runtime_stock_database.order_table.setdefault(
+        rp_symbol,
+        {stage: 0 for stage in range(StageType.SELL_1, StageType.BUY_3 + 1)},
+    )
+
+    if invest_communicator.check_and_update_stock_info(rp_symbol, rp_name) is False:
+        LogWriter().write_log(
+            "RP ETF lookup failed. symbol={}, info={}".format(rp_symbol, rp_name),
+            LogLevel.ERROR,
+        )
+        return
+
+    invest_communicator.set_rp_etf_state(True, rp_name)
+    LogWriter().write_log(
+        "RP ETF enabled. symbol={}, info={}".format(rp_symbol, rp_name),
+        LogLevel.INFO,
+    )
 
 
 def run_trading(
@@ -66,6 +104,7 @@ def run_trading(
         buy_prices[balance["symbol"]] = balance["buy_price"]
 
     interest_stocks = orderIO.read_stock_infos()
+    _initialize_rp_etf(investCommunicator, runtime_stock_database)
     stocks = []
     for symbol in interest_stocks.keys():
         stocks.append(
