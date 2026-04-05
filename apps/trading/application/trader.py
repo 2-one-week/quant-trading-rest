@@ -62,19 +62,18 @@ class BaseTrader:
             return True
         return False
 
-    def calculate_buy_total(self, symbol, price, quantity):
-        return self.wrapper.calculate_buy_total(symbol, price, quantity)
-
-    def calculate_break_even_sell_price(self, symbol, avg_buy_price, quantity):
-        return self.wrapper.calculate_break_even_sell_price(
+    def min_sell_price_for_profit(self, symbol, avg_buy_price, quantity):
+        return self.wrapper.min_sell_price_for_profit(
             symbol, avg_buy_price, quantity
         )
 
     def _max_affordable_quantity(self, symbol, try_price, available_cash):
-        return self.wrapper.max_buy_quantity(symbol, try_price, available_cash)
+        return self.wrapper.max_affordable_buy_quantity(
+            symbol, try_price, available_cash
+        )
 
     def _required_sell_quantity(self, symbol, price, target_amount):
-        return self.wrapper.min_sell_quantity_for_target_net(
+        return self.wrapper.required_sell_quantity_for_cash(
             symbol, price, target_amount
         )
 
@@ -86,7 +85,7 @@ class HantooTrader(BaseTrader):
 
     def _calc_buy_plan(self, symbol, quantity, available_cash):
         try_price = self._calc_try_price(symbol)
-        buy_total = self.calculate_buy_total(symbol, try_price, quantity)
+        buy_total = self.wrapper.required_buy_cash(symbol, try_price, quantity)
         if buy_total <= available_cash:
             return (quantity, 0, False)
 
@@ -163,7 +162,7 @@ class KiwoomTrader(BaseTrader):
 
     def _calc_buy_plan(self, symbol, quantity, available_cash):
         try_price = self._calc_try_price(symbol)
-        buy_total = self.calculate_buy_total(symbol, try_price, quantity)
+        buy_total = self.wrapper.required_buy_cash(symbol, try_price, quantity)
         if buy_total <= available_cash:
             return (quantity, 0, False)
 

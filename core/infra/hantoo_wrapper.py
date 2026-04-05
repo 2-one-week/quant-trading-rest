@@ -220,17 +220,17 @@ class HantooWrapper(InvestmentWrapper):
         self.stock_db.name_table[symbol] = info
         return True
 
-    def calculate_buy_total(self, symbol, price, quantity):
-        return self.fee_policy.calculate_buy_total(price, quantity)
+    def required_buy_cash(self, symbol, price, quantity):
+        return self.fee_policy.required_buy_cash(price, quantity)
 
-    def calculate_break_even_sell_price(self, symbol, avg_buy_price, quantity):
-        return self.fee_policy.break_even_sell_price(avg_buy_price, quantity)
+    def min_sell_price_for_profit(self, symbol, avg_buy_price, quantity):
+        return self.fee_policy.min_sell_price_for_profit(avg_buy_price, quantity)
 
-    def max_buy_quantity(self, symbol, price, available_cash):
-        return self.fee_policy.max_buy_quantity(price, available_cash)
+    def max_affordable_buy_quantity(self, symbol, price, available_cash):
+        return self.fee_policy.max_affordable_buy_quantity(price, available_cash)
 
-    def min_sell_quantity_for_target_net(self, symbol, price, target_amount):
-        return self.fee_policy.min_sell_quantity_for_target_net(price, target_amount)
+    def required_sell_quantity_for_cash(self, symbol, price, target_amount):
+        return self.fee_policy.required_sell_quantity_for_cash(price, target_amount)
 
     def get_available_cash(self):
         if self.mock:

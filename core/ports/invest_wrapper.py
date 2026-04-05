@@ -30,17 +30,17 @@ class InvestmentWrapper(ABC):
         pass
 
     @abstractmethod
-    def calculate_buy_total(self, symbol, price, quantity):
+    def required_buy_cash(self, symbol, price, quantity):
         pass
 
     @abstractmethod
-    def calculate_break_even_sell_price(self, symbol, avg_buy_price, quantity):
+    def min_sell_price_for_profit(self, symbol, avg_buy_price, quantity):
         pass
 
     @abstractmethod
-    def max_buy_quantity(self, symbol, price, available_cash):
+    def max_affordable_buy_quantity(self, symbol, price, available_cash):
         pass
 
     @abstractmethod
-    def min_sell_quantity_for_target_net(self, symbol, price, target_amount):
+    def required_sell_quantity_for_cash(self, symbol, price, target_amount):
         pass

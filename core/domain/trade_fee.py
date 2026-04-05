@@ -13,7 +13,7 @@ class BaseTradeFeePolicy:
     def calculate_sell_tax(self, price, quantity, **kwargs):
         return 0.0
 
-    def calculate_buy_total(self, price, quantity, **kwargs):
+    def required_buy_cash(self, price, quantity, **kwargs):
         notional = self._notional(price, quantity)
         return notional + self.calculate_buy_fee(price, quantity, **kwargs)
 
@@ -27,11 +27,11 @@ class BaseTradeFeePolicy:
 
     def calculate_round_trip_cost(self, buy_price, quantity, sell_price=None, **kwargs):
         sell_price = buy_price if sell_price is None else sell_price
-        return self.calculate_buy_total(
+        return self.required_buy_cash(
             buy_price, quantity, **kwargs
         ) - self.calculate_sell_proceeds(sell_price, quantity, **kwargs)
 
-    def max_buy_quantity(self, price, available_cash, **kwargs):
+    def max_affordable_buy_quantity(self, price, available_cash, **kwargs):
         price = float(price)
         cash = float(available_cash)
         if price <= 0 or cash <= 0:
@@ -41,13 +41,13 @@ class BaseTradeFeePolicy:
         high = max(int(cash / price), 0)
         while low < high:
             mid = (low + high + 1) // 2
-            if self.calculate_buy_total(price, mid, **kwargs) <= cash:
+            if self.required_buy_cash(price, mid, **kwargs) <= cash:
                 low = mid
             else:
                 high = mid - 1
         return low
 
-    def min_sell_quantity_for_target_net(self, price, target_amount, **kwargs):
+    def required_sell_quantity_for_cash(self, price, target_amount, **kwargs):
         price = float(price)
         target_amount = float(target_amount)
         if price <= 0 or target_amount <= 0:
@@ -66,13 +66,13 @@ class BaseTradeFeePolicy:
                 low = mid + 1
         return low
 
-    def break_even_sell_price(self, avg_buy_price, quantity, **kwargs):
+    def min_sell_price_for_profit(self, avg_buy_price, quantity, **kwargs):
         quantity = max(int(quantity), 1)
         avg_buy_price = float(avg_buy_price)
         if avg_buy_price <= 0:
             return 0.0
 
-        target = self.calculate_target_sell_proceeds(avg_buy_price, quantity, **kwargs)
+        target = self.target_sell_proceeds(avg_buy_price, quantity, **kwargs)
         low = 0.0
         high = max(avg_buy_price, self._price_step())
         while self.calculate_sell_proceeds(high, quantity, **kwargs) < target:
@@ -86,8 +86,8 @@ class BaseTradeFeePolicy:
                 low = mid
         return self._round_up_price(high)
 
-    def calculate_target_sell_proceeds(self, avg_buy_price, quantity, **kwargs):
-        return self.calculate_buy_total(avg_buy_price, quantity, **kwargs) * (
+    def target_sell_proceeds(self, avg_buy_price, quantity, **kwargs):
+        return self.required_buy_cash(avg_buy_price, quantity, **kwargs) * (
             1.0 + self.PROFIT_MARGIN_RATE
         )
 

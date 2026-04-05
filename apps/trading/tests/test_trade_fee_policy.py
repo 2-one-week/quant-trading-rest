@@ -9,7 +9,7 @@ class TradeFeePolicyTest(unittest.TestCase):
         self.us_policy = USTradeFeePolicy()
 
     def test_korea_stock_round_trip_uses_sell_tax(self):
-        buy_total = self.korea_policy.calculate_buy_total(10000, 10)
+        buy_total = self.korea_policy.required_buy_cash(10000, 10)
         sell_proceeds = self.korea_policy.calculate_sell_proceeds(10000, 10)
 
         self.assertAlmostEqual(buy_total, 100015.0)
@@ -27,9 +27,9 @@ class TradeFeePolicyTest(unittest.TestCase):
         sell_tax = self.us_policy.calculate_sell_tax(100.0, 10)
         self.assertAlmostEqual(sell_tax, 0.02255, places=6)
 
-    def test_break_even_sell_price_uses_margin_and_sell_costs(self):
-        break_even = self.us_policy.break_even_sell_price(100.0, 10)
-        target_sell_proceeds = self.us_policy.calculate_target_sell_proceeds(100.0, 10)
+    def test_min_sell_price_for_profit_uses_margin_and_sell_costs(self):
+        break_even = self.us_policy.min_sell_price_for_profit(100.0, 10)
+        target_sell_proceeds = self.us_policy.target_sell_proceeds(100.0, 10)
 
         self.assertGreaterEqual(
             self.us_policy.calculate_sell_proceeds(break_even, 10),

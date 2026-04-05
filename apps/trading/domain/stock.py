@@ -93,7 +93,7 @@ class Stock:
         if self.avg_buy_price <= 0:
             self.min_sell_price = 0.0
             return
-        self.min_sell_price = self.trader.calculate_break_even_sell_price(
+        self.min_sell_price = self.trader.min_sell_price_for_profit(
             self.symbol,
             self.avg_buy_price,
             max(self.holding_quantity, 1),
