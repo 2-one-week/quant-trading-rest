@@ -86,11 +86,7 @@ class ExamplePriceCrossBuyEntry(_BasePriceCrossEntry):
         if qty <= 0:
             return (0, StageType.NONE)
 
-        trader = getattr(self, "trader", None)
-        if trader is not None:
-            executed = trader.buy_stock_by_market_price(self.symbol, qty)
-        else:
-            executed = self.stock_db.investCommunicator.buy_stock_by_market_price(self.symbol, qty)
+        executed = self.trader.buy_stock_by_market_price(self.symbol, qty)
         if not executed:
             return (0, StageType.NONE)
         self.quantity -= executed
@@ -125,11 +121,7 @@ class ExamplePriceCrossSellEntry(_BasePriceCrossEntry):
         if qty <= 0:
             return (0, StageType.NONE)
 
-        trader = getattr(self, "trader", None)
-        if trader is not None:
-            executed = trader.sell_stock_by_market_price(self.symbol, qty)
-        else:
-            executed = self.stock_db.investCommunicator.sell_stock_by_market_price(self.symbol, qty)
+        executed = self.trader.sell_stock_by_market_price(self.symbol, qty)
         if not executed:
             return (0, StageType.NONE)
         self.quantity -= executed

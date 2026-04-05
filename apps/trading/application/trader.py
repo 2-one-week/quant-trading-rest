@@ -62,6 +62,22 @@ class BaseTrader:
             return True
         return False
 
+    def calculate_buy_total(self, symbol, price, quantity):
+        return self.wrapper.calculate_buy_total(symbol, price, quantity)
+
+    def calculate_break_even_sell_price(self, symbol, avg_buy_price, quantity):
+        return self.wrapper.calculate_break_even_sell_price(
+            symbol, avg_buy_price, quantity
+        )
+
+    def _max_affordable_quantity(self, symbol, try_price, available_cash):
+        return self.wrapper.max_buy_quantity(symbol, try_price, available_cash)
+
+    def _required_sell_quantity(self, symbol, price, target_amount):
+        return self.wrapper.min_sell_quantity_for_target_net(
+            symbol, price, target_amount
+        )
+
 
 class HantooTrader(BaseTrader):
     def _calc_try_price(self, symbol):
@@ -70,13 +86,14 @@ class HantooTrader(BaseTrader):
 
     def _calc_buy_plan(self, symbol, quantity, available_cash):
         try_price = self._calc_try_price(symbol)
-        if try_price * quantity <= available_cash:
+        buy_total = self.calculate_buy_total(symbol, try_price, quantity)
+        if buy_total <= available_cash:
             return (quantity, 0, False)
 
         rp_qty = self.wrapper.get_rp_etf_quantity() if self._is_rp_etf_ready() else 0
         if rp_qty > 0:
-            return (0, try_price * quantity - available_cash, True)
-        cash_qty = int(available_cash / try_price)
+            return (0, buy_total - available_cash, True)
+        cash_qty = self._max_affordable_quantity(symbol, try_price, available_cash)
         return (cash_qty, 0, False)
 
     def _exchange_rp_etf(self, needed_amount, available_cash):
@@ -89,7 +106,11 @@ class HantooTrader(BaseTrader):
         rp_qty = self.wrapper.get_rp_etf_quantity()
         if rp_qty <= 0:
             return False
-        required_quantity = int(needed_amount / rp_etf_price + 0.999)
+        required_quantity = self._required_sell_quantity(
+            self.wrapper.rp_etf_symbol,
+            rp_etf_price,
+            needed_amount,
+        )
         sell_qty = min(rp_qty, required_quantity)
         if sell_qty <= 0:
             return False
@@ -142,13 +163,14 @@ class KiwoomTrader(BaseTrader):
 
     def _calc_buy_plan(self, symbol, quantity, available_cash):
         try_price = self._calc_try_price(symbol)
-        if try_price * quantity <= available_cash:
+        buy_total = self.calculate_buy_total(symbol, try_price, quantity)
+        if buy_total <= available_cash:
             return (quantity, 0, False)
 
         rp_qty = self.wrapper.get_rp_etf_quantity() if self._is_rp_etf_ready() else 0
         if rp_qty > 0:
-            return (0, try_price * quantity - available_cash, True)
-        cash_qty = int(available_cash / try_price)
+            return (0, buy_total - available_cash, True)
+        cash_qty = self._max_affordable_quantity(symbol, try_price, available_cash)
         return (cash_qty, 0, False)
 
     def _exchange_rp_etf(self, needed_amount, available_cash):
@@ -161,7 +183,11 @@ class KiwoomTrader(BaseTrader):
         rp_qty = self.wrapper.get_rp_etf_quantity()
         if rp_qty <= 0:
             return False
-        required_quantity = (needed_amount + rp_etf_price - 1) // rp_etf_price
+        required_quantity = self._required_sell_quantity(
+            self.wrapper.rp_etf_symbol,
+            rp_etf_price,
+            needed_amount,
+        )
         sell_qty = min(rp_qty, required_quantity)
         if sell_qty <= 0:
             return False

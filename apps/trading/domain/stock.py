@@ -18,18 +18,23 @@ class Stock:
         sellTick,
         buy,
         sell,
-        min_sell_price,
+        avg_buy_price,
+        holding_quantity,
         stock_db,
-        trader=None,
+        trader,
         condition_factory=None,
     ):
+        if trader is None:
+            raise ValueError("trader is required")
         self.stock_db = stock_db
         self.symbol = symbol
         self.name = name
         self.trader = trader
         self.initialBuy = buy
         self.initialSell = sell
-        self.min_sell_price = min_sell_price
+        self.avg_buy_price = float(avg_buy_price)
+        self.holding_quantity = max(int(holding_quantity), 0)
+        self.min_sell_price = 0.0
         self.condition_factory = condition_factory or get_condition_factory("private_condition")
         self.strategy_runtime = None
 
@@ -70,6 +75,7 @@ class Stock:
         LogWriter().write_log(
             "init() Symbol: {}, Name: {}".format(self.symbol, self.name), LogLevel.DEBUG
         )
+        self._init_min_sell_price()
 
         ctx = StockContext(
             symbol=self.symbol,
@@ -82,6 +88,16 @@ class Stock:
         )
         self.strategy_runtime = self.condition_factory.create(ctx)
         self.sync_order_quantities(buy_tick, sell_tick, self.initialBuy, self.initialSell)
+
+    def _init_min_sell_price(self):
+        if self.avg_buy_price <= 0:
+            self.min_sell_price = 0.0
+            return
+        self.min_sell_price = self.trader.calculate_break_even_sell_price(
+            self.symbol,
+            self.avg_buy_price,
+            max(self.holding_quantity, 1),
+        )
 
     def get_stage_snapshot(self, side):
         return self.strategy_runtime.stage_snapshot(side)

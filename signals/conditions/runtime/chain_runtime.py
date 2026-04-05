@@ -11,6 +11,8 @@ class ChainStrategyRuntime:
     """Run buy/sell condition chains with optional gate and one-or-more entries."""
 
     def __init__(self, bundle: ConditionBundle, trader=None):
+        if trader is None:
+            raise ValueError("trader is required")
         self.condition_groups = {
             "buy": self._clone_chains(bundle.chain_groups.get("buy", [])),
             "sell": self._clone_chains(bundle.chain_groups.get("sell", [])),

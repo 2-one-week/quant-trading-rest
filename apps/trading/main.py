@@ -97,11 +97,13 @@ def run_trading(
     )
 
     buy_prices = {}
+    holding_quantities = {}
 
     account_balance = investCommunicator.get_stock_balance()
     orderIO.update_account_balance(account_balance)
     for balance in account_balance:
         buy_prices[balance["symbol"]] = balance["buy_price"]
+        holding_quantities[balance["symbol"]] = balance["rmnd_qty"]
 
     interest_stocks = orderIO.read_stock_infos()
     _initialize_rp_etf(investCommunicator, runtime_stock_database)
@@ -123,8 +125,8 @@ def run_trading(
                     interest_stocks[symbol]["sell_2"],
                     interest_stocks[symbol]["sell_3"],
                 ],
-                float(buy_prices.get(symbol, 0))
-                * 1.01,  # 손익분기지점(수수료 고려, 1% margin)
+                float(buy_prices.get(symbol, 0)),
+                int(holding_quantities.get(symbol, 0)),
                 trader=trader,
                 stock_db=runtime_stock_database,
                 condition_factory=condition_factory,

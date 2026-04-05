@@ -1,6 +1,6 @@
 from core.ports.invest_wrapper import InvestmentWrapper
 from core.infra import LogWriter, LogLevel
-from core.domain import StockTick, StageType, TickToMap
+from core.domain import StockTick, StageType, TickToMap, USTradeFeePolicy
 from core.infra.market_time import NasdaqMarketTime
 from core.infra.hantoo_rest import KoreaInvestment
 from core.infra.hantoo_record_rest import HantooRecordRestAPI, RECORDING_ENABLED
@@ -18,6 +18,7 @@ class HantooWrapper(InvestmentWrapper):
         self.rp_etf_symbol = None
         self.rp_etf_name = None
         self.rp_etf_enabled = False
+        self.fee_policy = USTradeFeePolicy()
 
     def connect(self, mode):
         project_root = find_project_root(Path(__file__).resolve())
@@ -218,6 +219,18 @@ class HantooWrapper(InvestmentWrapper):
     def check_and_update_stock_info(self, symbol, info):
         self.stock_db.name_table[symbol] = info
         return True
+
+    def calculate_buy_total(self, symbol, price, quantity):
+        return self.fee_policy.calculate_buy_total(price, quantity)
+
+    def calculate_break_even_sell_price(self, symbol, avg_buy_price, quantity):
+        return self.fee_policy.break_even_sell_price(avg_buy_price, quantity)
+
+    def max_buy_quantity(self, symbol, price, available_cash):
+        return self.fee_policy.max_buy_quantity(price, available_cash)
+
+    def min_sell_quantity_for_target_net(self, symbol, price, target_amount):
+        return self.fee_policy.min_sell_quantity_for_target_net(price, target_amount)
 
     def get_available_cash(self):
         if self.mock:
