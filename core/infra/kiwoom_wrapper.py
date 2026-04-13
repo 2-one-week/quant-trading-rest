@@ -75,6 +75,16 @@ class KiwoomWrapper(InvestmentWrapper):
         except ValueError:
             return None
 
+    def _get_cached_min1_price(self, symbol):
+        min_prices = self.stock_db.price_db.get(symbol, {}).get(StockTick.MIN1, [])
+        return min_prices[-1] if min_prices else None
+
+    def _get_order_reference_price(self, symbol):
+        cached_price = self._get_cached_min1_price(symbol)
+        if cached_price is not None:
+            return cached_price
+        return self.get_current_price(symbol)
+
     # Maximum 900 data
     def get_last_prices(self, symbol, tick, input_desc):
         if tick <= StockTick.HOUR:
@@ -339,7 +349,15 @@ class KiwoomWrapper(InvestmentWrapper):
                     LogLevel.ERROR,
                 )
         if hoga is None:
-            hoga = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+            hoga = self._get_order_reference_price(symbol)
+        if hoga is None:
+            LogWriter().write_log(
+                "{} : Buy SendOrder failed, no reference price available".format(
+                    self.stock_db.name_table[symbol]
+                ),
+                LogLevel.ERROR,
+            )
+            return 0
 
         response = self.kiwoom.send_order(
             symbol=symbol, quantity=str(quantity), buy=True, price=hoga
@@ -361,7 +379,7 @@ class KiwoomWrapper(InvestmentWrapper):
                 symbol,
                 self.stock_db.name_table[symbol],
                 quantity,
-                self.stock_db.price_db[symbol][StockTick.MIN1][-1],
+                self._get_order_reference_price(symbol),
             ),
             LogLevel.INFO,
         )
@@ -398,7 +416,15 @@ class KiwoomWrapper(InvestmentWrapper):
                     LogLevel.ERROR,
                 )
         if hoga is None:
-            hoga = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+            hoga = self._get_order_reference_price(symbol)
+        if hoga is None:
+            LogWriter().write_log(
+                "{} : Sell SendOrder failed, no reference price available".format(
+                    self.stock_db.name_table[symbol]
+                ),
+                LogLevel.ERROR,
+            )
+            return 0
 
         response = self.kiwoom.send_order(
             symbol=symbol, quantity=str(quantity), buy=False, price=hoga
@@ -419,7 +445,7 @@ class KiwoomWrapper(InvestmentWrapper):
                 symbol,
                 self.stock_db.name_table[symbol],
                 quantity,
-                self.stock_db.price_db[symbol][StockTick.MIN1][-1],
+                self._get_order_reference_price(symbol),
             ),
             LogLevel.INFO,
         )

@@ -63,6 +63,16 @@ class HantooWrapper(InvestmentWrapper):
             self.rp_etf_name = name
         self.rp_etf_enabled = bool(enabled and self.has_rp_etf_config())
 
+    def _get_cached_min1_price(self, symbol):
+        min_prices = self.stock_db.price_db.get(symbol, {}).get(StockTick.MIN1, [])
+        return min_prices[-1] if min_prices else None
+
+    def _get_order_reference_price(self, symbol):
+        cached_price = self._get_cached_min1_price(symbol)
+        if cached_price is not None:
+            return cached_price
+        return self.get_current_price(symbol)
+
     def get_last_prices(self, symbol, tick, input_desc):
         if tick <= StockTick.HOUR:
             ohlcv = self.broker.fetch_usa_1m_ohlcv(
@@ -258,7 +268,15 @@ class HantooWrapper(InvestmentWrapper):
                 excd=self.stock_db.name_table[symbol],
             )["output2"]["pask1"]
         else:
-            hoga = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+            hoga = self._get_order_reference_price(symbol)
+        if hoga is None:
+            LogWriter().write_log(
+                "{} : Hantoo buy_stock_by_market_price failed. no reference price".format(
+                    symbol
+                ),
+                LogLevel.ERROR,
+            )
+            return 0
 
         resp = self.broker.create_oversea_order(
             side="buy",
@@ -292,7 +310,7 @@ class HantooWrapper(InvestmentWrapper):
                 symbol,
                 self.stock_db.name_table[symbol],
                 quantity,
-                self.stock_db.price_db[symbol][StockTick.MIN1][-1],
+                self._get_order_reference_price(symbol),
             ),
             LogLevel.INFO,
         )
@@ -323,7 +341,15 @@ class HantooWrapper(InvestmentWrapper):
                 excd=self.stock_db.name_table[symbol],
             )["output2"]["pbid1"]
         else:
-            hoga = self.stock_db.price_db[symbol][StockTick.MIN1][-1]
+            hoga = self._get_order_reference_price(symbol)
+        if hoga is None:
+            LogWriter().write_log(
+                "{} : Hantoo sell_stock_by_market_price failed. no reference price".format(
+                    symbol
+                ),
+                LogLevel.ERROR,
+            )
+            return 0
 
         resp = self.broker.create_oversea_order(
             side="sell",
@@ -357,7 +383,7 @@ class HantooWrapper(InvestmentWrapper):
                 symbol,
                 self.stock_db.name_table[symbol],
                 quantity,
-                self.stock_db.price_db[symbol][StockTick.MIN1][-1],
+                self._get_order_reference_price(symbol),
             ),
             LogLevel.INFO,
         )
